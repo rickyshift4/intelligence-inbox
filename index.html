@@ -1096,16 +1096,44 @@
         }
 
         .action-pill.in-progress {
-            opacity: 0.6;
             cursor: not-allowed;
             pointer-events: none;
+            position: relative;
+            overflow: hidden;
+            background: #ffffff;
+            border-color: #10b981;
+        }
+
+        .action-pill.in-progress::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: var(--progress, 0%);
+            background: linear-gradient(90deg, #d1fae5 0%, #a7f3d0 100%);
+            transition: width 0.5s ease-out;
+            z-index: 0;
+        }
+
+        .action-pill.in-progress > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .action-pill.in-progress .material-icons {
+            color: #10b981;
+        }
+
+        .action-pill.in-progress .action-pill-text {
+            color: #047857;
         }
 
         .action-pill.in-progress:hover {
             transform: none;
-            border-color: #e5e7eb;
+            border-color: #10b981;
             background: #ffffff;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
         }
 
         .action-pill.completed {
@@ -3013,6 +3041,9 @@
                         if (arrowIcon) {
                             arrowIcon.textContent = 'more_horiz';
                         }
+                        // Set progress percentage as CSS variable
+                        const progress = submittedAction.progress || 0;
+                        pill.style.setProperty('--progress', `${progress}%`);
                     } else if (submittedAction.status === 'completed') {
                         pill.classList.add('completed');
                         pill.classList.remove('in-progress');
@@ -3020,6 +3051,7 @@
                         if (arrowIcon) {
                             arrowIcon.textContent = 'check';
                         }
+                        pill.style.setProperty('--progress', '100%');
                     }
                 } else {
                     // Reset if not submitted
@@ -3028,6 +3060,7 @@
                     if (arrowIcon) {
                         arrowIcon.textContent = 'arrow_forward';
                     }
+                    pill.style.removeProperty('--progress');
                 }
             });
         }
@@ -3173,7 +3206,8 @@
                 title: metadata.title,
                 subtitle: metadata.parentTitle,
                 timestamp: new Date(),
-                details: formData  // Store captured form data
+                details: formData,  // Store captured form data
+                progress: 0  // Initialize progress at 0%
             };
 
             // Add to submitted actions
@@ -3189,9 +3223,19 @@
             // Just show a toast notification
             showToast(`Action started! "${metadata.title}" moved to In Progress...`);
 
+            // Simulate progress updates over 5 seconds
+            const progressInterval = setInterval(() => {
+                if (newAction.status === 'in-progress' && newAction.progress < 100) {
+                    newAction.progress += 20; // Increase by 20% each second
+                    updateActionPillStates();
+                }
+            }, 1000);
+
             // Auto-complete after 5 seconds
             setTimeout(() => {
+                clearInterval(progressInterval);
                 newAction.status = 'completed';
+                newAction.progress = 100;
 
                 // Update action pill states (change to checkmark icon)
                 updateActionPillStates();
