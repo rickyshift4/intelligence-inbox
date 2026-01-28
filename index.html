@@ -453,6 +453,79 @@
             color: #6b7280;
         }
 
+        /* Action Details Section */
+        .action-details {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+        }
+
+        .action-details-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .action-details-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .action-details-edit-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            color: #6b7280;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-details-edit-btn:hover {
+            background: #f9fafb;
+            border-color: #cbd5e1;
+            color: #2563eb;
+        }
+
+        .action-details-edit-btn .material-icons {
+            font-size: 16px;
+        }
+
+        .action-details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .action-details-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .action-details-label {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .action-details-value {
+            font-size: 14px;
+            color: #1a1a1a;
+            font-weight: 500;
+        }
+
         /* Feedback Section */
         .feedback-section {
             margin-top: 32px;
@@ -1859,19 +1932,19 @@
                     <div class="form-grid four-col">
                         <div class="form-field">
                             <label class="form-label">First Name</label>
-                            <input type="text" class="form-input" placeholder="First" value="">
+                            <input type="text" class="form-input" placeholder="First" value="John">
                         </div>
                         <div class="form-field">
                             <label class="form-label">Last Name</label>
-                            <input type="text" class="form-input" placeholder="Last" value="">
+                            <input type="text" class="form-input" placeholder="Last" value="Smith">
                         </div>
                         <div class="form-field">
                             <label class="form-label">Payroll ID</label>
-                            <input type="text" class="form-input" placeholder="123456" value="">
+                            <input type="text" class="form-input" placeholder="123456" value="EMP-12345">
                         </div>
                         <div class="form-field">
                             <label class="form-label">Employee ID</label>
-                            <input type="text" class="form-input" placeholder="123456" value="">
+                            <input type="text" class="form-input" placeholder="123456" value="54321">
                         </div>
                     </div>
 
@@ -2708,6 +2781,9 @@
                     if (detailSection) {
                         detailSection.classList.add('hide-actions');
                     }
+
+                    // Show action details
+                    showActionDetails(insightId, actionType);
                 } else {
                     // Reset to original title in New tab
                     const insight = insightMessages.find(msg => msg.id === insightId);
@@ -2730,11 +2806,135 @@
                     if (detailSection) {
                         detailSection.classList.remove('hide-actions');
                     }
+
+                    // Remove action details in New tab
+                    const existingDetails = targetContent.querySelector('.action-details');
+                    if (existingDetails) {
+                        existingDetails.remove();
+                    }
                 }
 
                 // Update monitoring widget based on current tab
                 updateMonitoringWidget(insightId);
             }
+        }
+
+        function showActionDetails(insightId, actionType) {
+            const targetContent = document.getElementById('insight-' + insightId);
+            if (!targetContent) return;
+
+            // Remove existing details if present
+            const existingDetails = targetContent.querySelector('.action-details');
+            if (existingDetails) {
+                existingDetails.remove();
+            }
+
+            // Find the submitted action
+            const action = submittedActions.find(a => a.action === actionType);
+            if (!action) {
+                return;
+            }
+
+            // Check if we have details to show
+            const hasDetails = action.details && Object.keys(action.details).length > 0;
+
+            // Create action details HTML
+            const detailsHTML = `
+                <div class="action-details">
+                    <div class="action-details-header">
+                        <div class="action-details-title">Action Details</div>
+                        ${hasDetails ? `<button class="action-details-edit-btn" onclick="editActionDetails('${action.id}')">
+                            <span class="material-icons">edit</span>
+                            Edit Details
+                        </button>` : ''}
+                    </div>
+                    ${hasDetails ? `
+                        <div class="action-details-grid">
+                            ${Object.entries(action.details).map(([label, value]) => `
+                                <div class="action-details-item">
+                                    <div class="action-details-label">${label}</div>
+                                    <div class="action-details-value">${value}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div style="color: #6b7280; font-size: 14px;">No details captured for this action.</div>
+                    `}
+                </div>
+            `;
+
+            // Insert details after header, before monitoring widget
+            const detailHeader = targetContent.querySelector('.detail-header');
+            if (detailHeader) {
+                detailHeader.insertAdjacentHTML('afterend', detailsHTML);
+            }
+        }
+
+        function editActionDetails(actionId) {
+            const action = submittedActions.find(a => a.id === actionId);
+            if (!action || !action.details) return;
+
+            // Create modal HTML
+            const modalHTML = `
+                <div class="modal-overlay active" id="editDetailsModal">
+                    <div class="modal" style="max-width: 600px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                            <h3 style="margin: 0; font-size: 20px; font-weight: 600; color: #1a1a1a;">Edit Action Details</h3>
+                            <button onclick="closeEditModal()" style="background: none; border: none; cursor: pointer; padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; transition: all 0.2s;">
+                                <span class="material-icons">close</span>
+                            </button>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
+                            ${Object.entries(action.details).map(([label, value]) => `
+                                <div class="form-field">
+                                    <label class="form-label">${label}</label>
+                                    <input type="text" class="form-input" data-label="${label}" value="${value}">
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button class="secondary-btn" onclick="closeEditModal()">Cancel</button>
+                            <button class="primary-btn" onclick="saveActionDetails('${actionId}')">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Insert modal
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('editDetailsModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function saveActionDetails(actionId) {
+            const action = submittedActions.find(a => a.id === actionId);
+            if (!action) return;
+
+            // Get updated values from modal
+            const modal = document.getElementById('editDetailsModal');
+            const inputs = modal.querySelectorAll('.form-input');
+
+            inputs.forEach(input => {
+                const label = input.getAttribute('data-label');
+                const value = input.value;
+                if (label && action.details) {
+                    action.details[label] = value;
+                }
+            });
+
+            // Close modal
+            closeEditModal();
+
+            // Refresh the display
+            showInsightContent(action.parentId, action.action);
+
+            // Show success toast
+            showToast('Action details updated successfully!');
         }
 
         function updateMonitoringWidget(insightId) {
@@ -2931,6 +3131,35 @@
             const parentInsight = insightMessages.find(msg => msg.id === activeItemId);
             if (!parentInsight) return;
 
+            // Capture form data
+            const formElement = document.getElementById('form-' + action);
+            const formData = {};
+
+            if (formElement) {
+                // Capture text inputs
+                const inputs = formElement.querySelectorAll('.form-input');
+                inputs.forEach(input => {
+                    const label = input.closest('.form-field')?.querySelector('.form-label')?.textContent;
+                    if (label && input.value) {
+                        formData[label] = input.value;
+                    }
+                });
+
+                // Capture checked checkboxes
+                const checkboxes = formElement.querySelectorAll('input[type="checkbox"]:checked');
+                const checkedItems = [];
+                checkboxes.forEach(checkbox => {
+                    // Find the item name (in the div next to the checkbox)
+                    const itemDiv = checkbox.parentElement.querySelector('div > div');
+                    if (itemDiv) {
+                        checkedItems.push(itemDiv.textContent);
+                    }
+                });
+                if (checkedItems.length > 0) {
+                    formData['Items Removed'] = checkedItems.join(', ');
+                }
+            }
+
             // Create new action item card
             const actionId = `action-${Date.now()}-${action}`;
             const newAction = {
@@ -2943,7 +3172,8 @@
                 icon: parentInsight.icon,
                 title: metadata.title,
                 subtitle: metadata.parentTitle,
-                timestamp: new Date()
+                timestamp: new Date(),
+                details: formData  // Store captured form data
             };
 
             // Add to submitted actions
